@@ -14,8 +14,17 @@ d3.json("data/revenues.json").then(data => {
   
   data.forEach(month => {
     month.revenue = parseInt(month.revenue)
-    month.profit = parseInt(month.profit)
   })
+  
+  let y = d3.scaleLinear()
+    .domain([0, d3.max(data, (month) => { return month.revenue })])
+    .range([canvasHeight, 0])
+    
+  let x = d3.scaleBand()
+    .domain(data.map((month) => { return month.name }))
+    .range([0, canvasWidth])
+    .paddingInner(0.2)
+    .paddingOuter(0.2)
   
   graphGroup.append("rect")
     .attr("x", 0)
