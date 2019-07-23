@@ -10,6 +10,7 @@ let svg = d3.select("#chart-area").append("svg")
 let graphGroup = svg.append("g")
   .attr("transform", "translate(" + margin.left + ", " + margin.top + ")")
 
+
 d3.json("data/revenues.json").then(data => {
   
   data.forEach(month => {
@@ -19,18 +20,30 @@ d3.json("data/revenues.json").then(data => {
   let y = d3.scaleLinear()
     .domain([0, d3.max(data, (month) => { return month.revenue })])
     .range([canvasHeight, 0])
-    
+  
   let x = d3.scaleBand()
-    .domain(data.map((month) => { return month.name }))
+    .domain(data.map((month) => { return month.month }))
     .range([0, canvasWidth])
-    .paddingInner(0.2)
-    .paddingOuter(0.2)
+    .paddingInner(0.3)
+    .paddingOuter(0.3)
   
-  graphGroup.append("rect")
-    .attr("x", 0)
-    .attr("y", 0)
-    .attr("width", canvasWidth)
-    .attr("height", canvasHeight)
-    .attr("fill", "grey")
+  let rectangles = graphGroup.selectAll("rect")
+    .data(data)
+    
+  rectangles.enter()
+    .append("rect")
+      .attr("width", x.bandwidth())
+      .attr("height", (month) => {
+        return canvasHeight - y(month.revenue)
+      })
+      .attr("x", (month) => {
+        return x(month.month)
+      })
+      .attr("y", (month) => {
+        return y(month.revenue)
+      })
+      .attr("fill", "grey")
   
+}).catch(error => {
+  console.log(error)
 })
