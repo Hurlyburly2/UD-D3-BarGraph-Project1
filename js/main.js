@@ -1,5 +1,6 @@
 let margin = { top: 10, right: 10, bottom: 200, left: 100 }
 let flag = true
+let transition = d3.transition().duration(750)
 
 let canvasWidth = 600 - margin.right - margin.left;
 let canvasHeight = 500 - margin.top - margin.bottom;
@@ -51,7 +52,9 @@ d3.json("data/revenues.json").then(data => {
   })
   
   d3.interval(() => {
-    update(data)
+    let newData = flag ? data : data.slice(1)
+    
+    update(newData)
     if (flag) { flag = false }
     else { flag = true }
   }, 1000)
@@ -64,17 +67,17 @@ d3.json("data/revenues.json").then(data => {
 const update = (data) => {
   let value = flag ? "revenue" : "profit" 
   
-  y.domain([0, d3.max(data, (month) => { return month[value] })])
   x.domain(data.map((month) => { return month.month }))
+  y.domain([0, d3.max(data, (month) => { return month[value] })])
   
   let xAxisCall = d3.axisBottom(x)
-  xAxisGroup.call(xAxisCall)
+  xAxisGroup.transition(transition).call(xAxisCall)
     
   let yAxisCall = d3.axisLeft(y) 
     .tickFormat((label) => {
       return ("$" + label)
     })
-  yAxisGroup.call(yAxisCall)
+  yAxisGroup.transition(transition).call(yAxisCall)
   
   let colors = d3.scaleOrdinal()
     .domain([0, d3.max(data, (month) => { return month[value] })])
@@ -82,39 +85,30 @@ const update = (data) => {
   
   // JOIN NEW DATA WITH OLD ELEMENTS
   let rectangles = graphGroup.selectAll("rect")
-    .data(data)
+    .data(data, (data) => { return data.month })
+    // ^second is a arg that returns keys that d3 matches up
     
   // EXIT old elements not present in new data
-  rectangles.exit().remove()
-  
-  //UPDATE old elements present in new data
-  rectangles
-    .attr("width", x.bandwidth())
-    .attr("height", (month) => {
-      return canvasHeight - y(month[value])
-    })
-    .attr("x", (month) => {
-      return x(month.month)
-    })
-    .attr("y", (month) => {
-      return y(month[value])
-    })
-    
+  rectangles.exit()
+    .attr("fill", "red")
+    .transition(transition)
+      .attr("y", y(0))
+      .attr("height", 0)
+      .remove()
+
   rectangles.enter()
-    .append("rect")
+    .append("rect")     // applied only on enter
+      .attr("fill", (month) => { return colors(month.month) })
+      .attr("height", 0)
+      .attr("y", y(0))
+      .attr("x", (month) => { return x(month.month) })
       .attr("width", x.bandwidth())
-      .attr("height", (month) => {
-        return canvasHeight - y(month[value])
-      })
-      .attr("x", (month) => {
-        return x(month.month)
-      })
-      .attr("y", (month) => {
-        return y(month[value])
-      })
-      .attr("fill", (month) => {
-        return colors(month.month)
-      })
+      .merge(rectangles)      // lets you get rid of update section (stuff after this is applied on ENTER and UPDATE)
+      .transition(transition)
+        .attr("x", (month) => { return x(month.month )})
+        .attr("width", x.bandwidth())
+        .attr("height", (month) => { return canvasHeight - y(month[value]) })
+        .attr("y", (month) => { return y(month[value]) })
       
   let label = flag ? "Revenue" : "Profit"
   yLabel.text(label)
