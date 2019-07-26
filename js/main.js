@@ -1,4 +1,5 @@
 let margin = { top: 10, right: 10, bottom: 200, left: 100 }
+let flag = true
 
 let canvasWidth = 600 - margin.right - margin.left;
 let canvasHeight = 500 - margin.top - margin.bottom;
@@ -18,7 +19,7 @@ graphGroup.append("text")
   .attr("text-anchor", "middle")
   .text("Month")
   
-graphGroup.append("text")
+let yLabel = graphGroup.append("text")
   .attr("class", "y-axis label")
   .attr("x", -(canvasHeight / 2))
   .attr("y", -60)
@@ -46,10 +47,13 @@ d3.json("data/revenues.json").then(data => {
   
   data.forEach(month => {
     month.revenue = parseInt(month.revenue)
+    month.profit = parseInt(month.profit)
   })
   
   d3.interval(() => {
     update(data)
+    if (flag) { flag = false }
+    else { flag = true }
   }, 1000)
   update(data)
   
@@ -58,7 +62,9 @@ d3.json("data/revenues.json").then(data => {
 })
 
 const update = (data) => {
-  y.domain([0, d3.max(data, (month) => { return month.revenue })])
+  let value = flag ? "revenue" : "profit" 
+  
+  y.domain([0, d3.max(data, (month) => { return month[value] })])
   x.domain(data.map((month) => { return month.month }))
   
   let xAxisCall = d3.axisBottom(x)
@@ -71,7 +77,7 @@ const update = (data) => {
   yAxisGroup.call(yAxisCall)
   
   let colors = d3.scaleOrdinal()
-    .domain([0, d3.max(data, (month) => { return month.revenue })])
+    .domain([0, d3.max(data, (month) => { return month[value] })])
     .range(d3.schemeRdBu[data.length + 2])
   
   // JOIN NEW DATA WITH OLD ELEMENTS
@@ -85,28 +91,31 @@ const update = (data) => {
   rectangles
     .attr("width", x.bandwidth())
     .attr("height", (month) => {
-      return canvasHeight - y(month.revenue)
+      return canvasHeight - y(month[value])
     })
     .attr("x", (month) => {
       return x(month.month)
     })
     .attr("y", (month) => {
-      return y(month.revenue)
+      return y(month[value])
     })
     
   rectangles.enter()
     .append("rect")
       .attr("width", x.bandwidth())
       .attr("height", (month) => {
-        return canvasHeight - y(month.revenue)
+        return canvasHeight - y(month[value])
       })
       .attr("x", (month) => {
         return x(month.month)
       })
       .attr("y", (month) => {
-        return y(month.revenue)
+        return y(month[value])
       })
       .attr("fill", (month) => {
         return colors(month.month)
       })
+      
+  let label = flag ? "Revenue" : "Profit"
+  yLabel.text(label)
 }
