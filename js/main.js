@@ -27,35 +27,48 @@ graphGroup.append("text")
   .attr("transform", "rotate(-90)")
   .text("Revenue")
 
+let yAxisGroup = graphGroup.append("g")
+  .attr("class", "y-axis")
+
+let y = d3.scaleLinear()
+  .range([canvasHeight, 0])
+
+let xAxisGroup = graphGroup.append("g")
+  .attr("class", "x-axis")
+  .attr("transform", "translate(0," + canvasHeight + ")")
+
+let x = d3.scaleBand()
+  .range([0, canvasWidth])
+  .paddingInner(0.3)
+  .paddingOuter(0.3)
+
 d3.json("data/revenues.json").then(data => {
   
   data.forEach(month => {
     month.revenue = parseInt(month.revenue)
   })
   
-  let y = d3.scaleLinear()
-    .domain([0, d3.max(data, (month) => { return month.revenue })])
-    .range([canvasHeight, 0])
+  d3.interval(() => {
+    update(data)
+  }, 1000)
+  update(data)
   
-  let x = d3.scaleBand()
-    .domain(data.map((month) => { return month.month }))
-    .range([0, canvasWidth])
-    .paddingInner(0.3)
-    .paddingOuter(0.3)
+}).catch(error => {
+  console.log(error)
+})
+
+const update = (data) => {
+  y.domain([0, d3.max(data, (month) => { return month.revenue })])
+  x.domain(data.map((month) => { return month.month }))
   
   let xAxisCall = d3.axisBottom(x)
-  graphGroup.append("g")
-    .attr("class", "x-axis")
-    .attr("transform", "translate(0," + canvasHeight + ")")
-    .call(xAxisCall)
+  xAxisGroup.call(xAxisCall)
     
   let yAxisCall = d3.axisLeft(y) 
     .tickFormat((label) => {
       return ("$" + label)
     })
-  graphGroup.append("g")
-    .attr("class", "y-axis")
-    .call(yAxisCall)
+  yAxisGroup.call(yAxisCall)
   
   let colors = d3.scaleOrdinal()
     .domain([0, d3.max(data, (month) => { return month.revenue })])
@@ -79,9 +92,4 @@ d3.json("data/revenues.json").then(data => {
       .attr("fill", (month) => {
         return colors(month.month)
       })
-  d3.interval(() => {
-    console.log("Interval Test")
-  }, 1000)
-}).catch(error => {
-  console.log(error)
-})
+}
