@@ -79,7 +79,9 @@ d3.json("data/revenues.json").then(data => {
       .attr("fill", (month) => {
         return colors(month.month)
       })
-  
+  d3.interval(() => {
+    console.log("Interval Test")
+  }, 1000)
 }).catch(error => {
   console.log(error)
 })
