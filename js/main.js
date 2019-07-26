@@ -74,8 +74,25 @@ const update = (data) => {
     .domain([0, d3.max(data, (month) => { return month.revenue })])
     .range(d3.schemeRdBu[data.length + 2])
   
+  // JOIN NEW DATA WITH OLD ELEMENTS
   let rectangles = graphGroup.selectAll("rect")
     .data(data)
+    
+  // EXIT old elements not present in new data
+  rectangles.exit().remove()
+  
+  //UPDATE old elements present in new data
+  rectangles
+    .attr("width", x.bandwidth())
+    .attr("height", (month) => {
+      return canvasHeight - y(month.revenue)
+    })
+    .attr("x", (month) => {
+      return x(month.month)
+    })
+    .attr("y", (month) => {
+      return y(month.revenue)
+    })
     
   rectangles.enter()
     .append("rect")
